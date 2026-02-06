@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ID Capture</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <h1>ID Capture Form</h1>
+
+  <video id="video" autoplay playsinline></video>
+  <canvas id="canvas" hidden></canvas>
+
+  <button id="captureBtn">Capture Photo</button>
+
+  <img id="preview" />
+
+  <form id="dataForm">
+    <input type="text" id="fullName" placeholder="Full Name" required />
+    <input type="text" id="idNumber" placeholder="ID Number" required />
+    <button type="submit">Submit</button>
+  </form>
+
+  <script src="capture.js"></script>
+</body>
+</html>
