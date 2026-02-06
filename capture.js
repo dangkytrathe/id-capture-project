@@ -33,7 +33,7 @@ document.getElementById("dataForm").addEventListener("submit", e => {
     image: imageData
   };
 
-  fetch("https://script.google.com/macros/s/AKfycbzj_FMT8VCHeUhpz-TQjp56gVCpstkQaSUgRiO3uqzPo93Ez5JJ2Can_jz2IREwWlnP/exec", {
+  fetch("https://script.google.com/macros/s/AKfycbx2g34Cd67MWhxpAbgeFe0f2n9KRYTdpEPV-QKPM7k/dev", {
   method: "POST",
   headers: {
     "Content-Type": "application/json"
