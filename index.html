@@ -1,28 +1,75 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>ID Capture</title>
-  <link rel="stylesheet" href="style.css" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ID Capture Form</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <div class="container">
+        <h1>ID Capture Form</h1>
+        
+        <div class="capture-section">
+            <h2>Step 1: Capture ID Photo</h2>
+            
+            <!-- Camera feed -->
+            <div class="camera-container">
+                <video id="video" autoplay playsinline></video>
+                <canvas id="canvas" style="display: none;"></canvas>
+            </div>
+            
+            <!-- Preview area -->
+            <div id="preview-container" class="preview-container" style="display: none;">
+                <img id="preview" alt="Captured image">
+            </div>
+            
+            <!-- Camera controls -->
+            <div class="controls">
+                <button id="start-camera" class="btn btn-primary">Start Camera</button>
+                <button id="capture" class="btn btn-success" style="display: none;">Capture Photo</button>
+                <button id="retake" class="btn btn-warning" style="display: none;">Retake</button>
+            </div>
+        </div>
 
-  <h1>ID Capture Form</h1>
+        <div class="form-section">
+            <h2>Step 2: Enter Information</h2>
+            
+            <form id="id-form">
+                <div class="form-group">
+                    <label for="full-name">Full Name *</label>
+                    <input type="text" id="full-name" name="fullName" required>
+                </div>
 
-  <video id="video" autoplay playsinline></video>
-  <canvas id="canvas" hidden></canvas>
+                <div class="form-group">
+                    <label for="id-number">ID Number *</label>
+                    <input type="text" id="id-number" name="idNumber" required>
+                </div>
 
-  <button id="captureBtn">Capture Photo</button>
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" name="email">
+                </div>
 
-  <img id="preview" />
+                <div class="form-group">
+                    <label for="phone">Phone Number</label>
+                    <input type="tel" id="phone" name="phone">
+                </div>
 
-  <form id="dataForm">
-    <input type="text" id="fullName" placeholder="Full Name" required />
-    <input type="text" id="idNumber" placeholder="ID Number" required />
-    <button type="submit">Submit</button>
-  </form>
+                <div class="form-group">
+                    <label for="notes">Notes</label>
+                    <textarea id="notes" name="notes" rows="3"></textarea>
+                </div>
 
-  <script src="capture.js"></script>
+                <button type="submit" id="submit-btn" class="btn btn-primary btn-large" disabled>
+                    Submit Form
+                </button>
+            </form>
+        </div>
+
+        <div id="status-message" class="status-message"></div>
+    </div>
+
+    <script src="capture.js"></script>
 </body>
 </html>
