@@ -15,7 +15,7 @@ const submitBtn = document.getElementById('submit-btn');
 const statusMessage = document.getElementById('status-message');
 
 // Google Apps Script Web App URL - UPDATE THIS WITH YOUR DEPLOYED SCRIPT URL
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbysV-ZPODYyrboOVMr1zhM0HHzPGod97HQ9IS0X_r24M878C0td1Z7z4gha0ytuQWQn/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxAYZdscu-6SE_JWAOEDFBo5xlED5nUxXzj1xmc9F6LUF7L9-uzsPiNhvEqD14yWdo_/exec';
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
