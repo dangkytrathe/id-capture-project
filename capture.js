@@ -33,7 +33,7 @@ document.getElementById("dataForm").addEventListener("submit", e => {
     image: imageData
   };
 
-  fetch("YOUR_APPS_SCRIPT_URL", {
+  fetch("https://script.google.com/macros/s/AKfycbzj_FMT8VCHeUhpz-TQjp56gVCpstkQaSUgRiO3uqzPo93Ez5JJ2Can_jz2IREwWlnP/exec", {
     method: "POST",
     body: JSON.stringify(payload)
   })
