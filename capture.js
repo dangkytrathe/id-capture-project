@@ -34,10 +34,11 @@ document.getElementById("dataForm").addEventListener("submit", e => {
   };
 
   fetch("https://script.google.com/macros/s/AKfycbzj_FMT8VCHeUhpz-TQjp56gVCpstkQaSUgRiO3uqzPo93Ez5JJ2Can_jz2IREwWlnP/exec", {
-    method: "POST",
-    body: JSON.stringify(payload)
-  })
-  .then(res => alert("Submitted successfully"))
-  .catch(err => alert("Submission failed"));
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify(payload),
+  mode: "no-cors"
 });
 
