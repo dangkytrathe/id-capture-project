@@ -11,24 +11,61 @@
         <h1>ID Capture Form</h1>
         
         <div class="capture-section">
-            <h2>Step 1: Capture ID Photo</h2>
+            <h2>Step 1: Capture ID Photos</h2>
             
-            <!-- Camera feed -->
-            <div class="camera-container">
-                <video id="video" autoplay playsinline></video>
+            <!-- Progress indicator -->
+            <div class="capture-progress">
+                <div class="progress-item" id="progress-front">
+                    <span class="progress-number">1</span>
+                    <span class="progress-label">Front Side</span>
+                </div>
+                <div class="progress-item" id="progress-back">
+                    <span class="progress-number">2</span>
+                    <span class="progress-label">Back Side</span>
+                </div>
+            </div>
+            
+            <!-- Camera feed with overlay -->
+            <div class="camera-wrapper">
+                <div class="camera-container" id="camera-container">
+                    <video id="video" autoplay playsinline></video>
+                    <canvas id="overlay-canvas"></canvas>
+                    <div id="detection-message" class="detection-message"></div>
+                </div>
                 <canvas id="canvas" style="display: none;"></canvas>
             </div>
             
             <!-- Preview area -->
-            <div id="preview-container" class="preview-container" style="display: none;">
-                <img id="preview" alt="Captured image">
+            <div class="preview-grid">
+                <div class="preview-item">
+                    <h3>Front Side</h3>
+                    <div id="preview-container-front" class="preview-container" style="display: none;">
+                        <img id="preview-front" alt="Front of ID">
+                    </div>
+                    <div id="placeholder-front" class="preview-placeholder">
+                        <span>📸</span>
+                        <p>Not captured</p>
+                    </div>
+                </div>
+                
+                <div class="preview-item">
+                    <h3>Back Side</h3>
+                    <div id="preview-container-back" class="preview-container" style="display: none;">
+                        <img id="preview-back" alt="Back of ID">
+                    </div>
+                    <div id="placeholder-back" class="preview-placeholder">
+                        <span>📸</span>
+                        <p>Not captured</p>
+                    </div>
+                </div>
             </div>
             
             <!-- Camera controls -->
             <div class="controls">
                 <button id="start-camera" class="btn btn-primary">Start Camera</button>
-                <button id="capture" class="btn btn-success" style="display: none;">Capture Photo</button>
-                <button id="retake" class="btn btn-warning" style="display: none;">Retake</button>
+                <button id="capture-front" class="btn btn-success" style="display: none;">Capture Front Side</button>
+                <button id="capture-back" class="btn btn-success" style="display: none;">Capture Back Side</button>
+                <button id="retake" class="btn btn-warning" style="display: none;">Retake Current Side</button>
             </div>
         </div>
 
@@ -64,12 +101,22 @@
                 <button type="submit" id="submit-btn" class="btn btn-primary btn-large" disabled>
                     Submit Form
                 </button>
+                
+                <!-- Upload progress -->
+                <div id="upload-progress" class="upload-progress" style="display: none;">
+                    <div class="progress-bar-container">
+                        <div id="progress-bar" class="progress-bar"></div>
+                    </div>
+                    <div id="progress-text" class="progress-text">Uploading... 0%</div>
+                </div>
             </form>
         </div>
 
         <div id="status-message" class="status-message"></div>
     </div>
 
+    <!-- Load OpenCV.js -->
+    <script async src="https://docs.opencv.org/4.8.0/opencv.js" onload="onOpenCvReady()"></script>
     <script src="capture.js"></script>
 </body>
 </html>
