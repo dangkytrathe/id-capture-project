@@ -5,6 +5,7 @@ let capturedBackImage = null;
 let currentSide = 'front'; // 'front' or 'back'
 let detectionInterval = null;
 let opencvReady = false;
+let opencvLoadAttempts = 0;
 
 // DOM elements
 const video = document.getElementById('video');
@@ -46,16 +47,62 @@ const DETECTION_THRESHOLD = 0.95; // 95% coverage required
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
     setupEventListeners();
-    showDetectionMessage('Loading OpenCV...', 'loading');
+    loadOpenCV();
 });
+
+// Load OpenCV.js
+function loadOpenCV() {
+    showDetectionMessage('Loading OpenCV...', 'loading');
+    
+    // Check if OpenCV is already loaded
+    if (typeof cv !== 'undefined' && cv.Mat) {
+        onOpenCvReady();
+        return;
+    }
+    
+    // Create script element
+    const script = document.createElement('script');
+    script.src = 'https://docs.opencv.org/4.8.0/opencv.js';
+    script.async = true;
+    
+    script.onload = () => {
+        console.log('OpenCV script loaded, waiting for initialization...');
+        checkOpenCVReady();
+    };
+    
+    script.onerror = () => {
+        console.error('Failed to load OpenCV.js');
+        showDetectionMessage('OpenCV failed to load. Detection disabled.', 'bad');
+        // Continue without OpenCV - basic capture still works
+        opencvReady = false;
+    };
+    
+    document.body.appendChild(script);
+}
+
+// Check if OpenCV is ready (it needs time to initialize after script loads)
+function checkOpenCVReady() {
+    opencvLoadAttempts++;
+    
+    if (typeof cv !== 'undefined' && cv.Mat) {
+        onOpenCvReady();
+    } else if (opencvLoadAttempts < 50) {
+        // Try again in 100ms (max 5 seconds)
+        setTimeout(checkOpenCVReady, 100);
+    } else {
+        console.error('OpenCV initialization timeout');
+        showDetectionMessage('OpenCV timeout. Detection disabled.', 'bad');
+        opencvReady = false;
+        setTimeout(() => hideDetectionMessage(), 3000);
+    }
+}
 
 // OpenCV ready callback
 function onOpenCvReady() {
-    if (typeof cv !== 'undefined') {
-        opencvReady = true;
-        console.log('OpenCV.js is ready');
-        hideDetectionMessage();
-    }
+    opencvReady = true;
+    console.log('OpenCV.js is ready');
+    showDetectionMessage('OpenCV ready!', 'good');
+    setTimeout(() => hideDetectionMessage(), 2000);
 }
 
 function setupEventListeners() {
@@ -149,77 +196,109 @@ function detectIDCard() {
         // Convert to OpenCV Mat
         let src = cv.imread(tempCanvas);
         let gray = new cv.Mat();
+        let blurred = new cv.Mat();
         let edges = new cv.Mat();
         let contours = new cv.MatVector();
         let hierarchy = new cv.Mat();
 
         // Convert to grayscale
-        cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
+        cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY, 0);
         
-        // Apply Gaussian blur
-        cv.GaussianBlur(gray, gray, new cv.Size(5, 5), 0);
+        // Apply Gaussian blur to reduce noise
+        let ksize = new cv.Size(5, 5);
+        cv.GaussianBlur(gray, blurred, ksize, 0, 0, cv.BORDER_DEFAULT);
         
-        // Edge detection
-        cv.Canny(gray, edges, 50, 150);
+        // Edge detection with Canny
+        cv.Canny(blurred, edges, 50, 150, 3, false);
+        
+        // Dilate edges to connect broken lines
+        let kernel = cv.Mat.ones(3, 3, cv.CV_8U);
+        cv.dilate(edges, edges, kernel, new cv.Point(-1, -1), 2);
         
         // Find contours
         cv.findContours(edges, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
 
-        // Find the largest rectangle-like contour
+        // Calculate frame area
+        const frameArea = src.rows * src.cols;
+        
+        // Find best rectangular contour
         let maxArea = 0;
         let bestContour = null;
+        let bestRect = null;
         let coveragePercent = 0;
-
-        const frameArea = src.rows * src.cols;
 
         for (let i = 0; i < contours.size(); i++) {
             const contour = contours.get(i);
             const area = cv.contourArea(contour);
             
-            // Approximate polygon
-            const peri = cv.arcLength(contour, true);
-            const approx = new cv.Mat();
-            cv.approxPolyDP(contour, approx, 0.02 * peri, true);
-            
-            // Look for rectangles (4 corners)
-            if (approx.rows === 4 && area > maxArea) {
-                maxArea = area;
-                bestContour = contour;
-                coveragePercent = (area / frameArea) * 100;
+            // Skip if too small (less than 10% of frame)
+            if (area < frameArea * 0.1) {
+                contour.delete();
+                continue;
             }
             
-            approx.delete();
+            // Get bounding rectangle
+            const rect = cv.boundingRect(contour);
+            
+            // Check if it's roughly rectangular (aspect ratio check)
+            const aspectRatio = rect.width / rect.height;
+            const isCardLike = aspectRatio > 1.3 && aspectRatio < 2.0;
+            
+            if (isCardLike && area > maxArea) {
+                maxArea = area;
+                if (bestContour) bestContour.delete();
+                bestContour = contour.clone();
+                bestRect = rect;
+                coveragePercent = (area / frameArea) * 100;
+            } else {
+                contour.delete();
+            }
         }
 
         // Draw overlay
         const overlayCtx = overlayCanvas.getContext('2d');
         overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
 
-        if (bestContour && coveragePercent >= DETECTION_THRESHOLD) {
-            // Draw green border
+        // Scale factor from video to canvas
+        const scaleX = overlayCanvas.width / src.cols;
+        const scaleY = overlayCanvas.height / src.rows;
+
+        if (bestRect && coveragePercent >= DETECTION_THRESHOLD) {
+            // Draw green rectangle
             overlayCtx.strokeStyle = '#48bb78';
-            overlayCtx.lineWidth = 8;
-            drawContour(overlayCtx, bestContour);
+            overlayCtx.lineWidth = 6;
+            overlayCtx.strokeRect(
+                bestRect.x * scaleX,
+                bestRect.y * scaleY,
+                bestRect.width * scaleX,
+                bestRect.height * scaleY
+            );
             
             showDetectionMessage(`Perfect! ${coveragePercent.toFixed(0)}% - Ready to capture`, 'good');
-        } else if (bestContour) {
-            // Draw red border
+        } else if (bestRect) {
+            // Draw red rectangle
             overlayCtx.strokeStyle = '#f56565';
-            overlayCtx.lineWidth = 8;
-            drawContour(overlayCtx, bestContour);
+            overlayCtx.lineWidth = 6;
+            overlayCtx.strokeRect(
+                bestRect.x * scaleX,
+                bestRect.y * scaleY,
+                bestRect.width * scaleX,
+                bestRect.height * scaleY
+            );
             
-            showDetectionMessage(`Move closer - ${coveragePercent.toFixed(0)}% (need ${(DETECTION_THRESHOLD * 100).toFixed(0)}%)`, 'bad');
+            showDetectionMessage(`Move closer - ${coveragePercent.toFixed(0)}% (need 95%)`, 'bad');
         } else {
-            // No card detected
+            // Draw guide frame
             overlayCtx.strokeStyle = '#f56565';
             overlayCtx.lineWidth = 4;
-            overlayCtx.setLineDash([10, 10]);
+            overlayCtx.setLineDash([15, 15]);
             overlayCtx.strokeRect(
                 overlayCanvas.width * 0.05,
                 overlayCanvas.height * 0.15,
                 overlayCanvas.width * 0.9,
                 overlayCanvas.height * 0.7
             );
+            overlayCtx.setLineDash([]);
             
             showDetectionMessage('Position ID card in frame', 'bad');
         }
@@ -227,29 +306,21 @@ function detectIDCard() {
         // Cleanup
         src.delete();
         gray.delete();
+        blurred.delete();
         edges.delete();
         contours.delete();
         hierarchy.delete();
+        kernel.delete();
         if (bestContour) bestContour.delete();
 
     } catch (error) {
         console.error('Detection error:', error);
+        // Don't spam errors - just stop detection temporarily
+        stopDetection();
+        setTimeout(() => {
+            if (stream) startDetection();
+        }, 2000);
     }
-}
-
-function drawContour(ctx, contour) {
-    ctx.beginPath();
-    for (let i = 0; i < contour.data32S.length; i += 2) {
-        const x = contour.data32S[i];
-        const y = contour.data32S[i + 1];
-        if (i === 0) {
-            ctx.moveTo(x, y);
-        } else {
-            ctx.lineTo(x, y);
-        }
-    }
-    ctx.closePath();
-    ctx.stroke();
 }
 
 function showDetectionMessage(message, type) {
